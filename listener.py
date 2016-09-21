@@ -29,12 +29,12 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 logger.propagate = 0
 
+slack = Slacker(os.environ['SLACK_TOKEN'])
+
 
 def refresh_license_plates(licenseplate_file='/data/licenseplates.json'):
     if not os.path.isfile(licenseplate_file) or \
             time.time() - os.path.getmtime(licenseplate_file) > (24 * 60 * 60):
-
-        slack = Slacker(os.environ['SLACK_TOKEN'])
 
         users_list = slack.users.list().body['members']
 

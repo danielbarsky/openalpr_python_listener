@@ -41,7 +41,8 @@ def refresh_license_plates(licenseplate_file='/data/licenseplates.json'):
         license_plates = {}
         for user in users_list:
             try:
-                if ('is_bot' in user and user['is_bot']) or ('deleted' in user and user['deleted'] or 'email' not in user):
+                if ('is_bot' in user and user['is_bot']) or ('deleted' in user and user['deleted']) or \
+                                'profile' not in user or 'email' not in user['profile']:
                     continue
                 profile = slack.users.profile.get(user['id'])
                 if profile is None or 'profile' not in profile.body:
@@ -55,10 +56,10 @@ def refresh_license_plates(licenseplate_file='/data/licenseplates.json'):
                     license_plates[license_plate] = email
             except (TypeError, Error):
                 continue
-        with open('/data/licenseplates.json', 'wt') as f_lp:
+        with open(licenseplate_file, 'wt') as f_lp:
             json.dump(license_plates, f_lp)
     else:
-        with open('/data/licenseplates.json', 'rt') as f_lp:
+        with open(licenseplate_file, 'rt') as f_lp:
             license_plates = json.load(f_lp)
 
     return license_plates
@@ -81,7 +82,7 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         saved_fns = ""
 
         try:
-            f = form['file']
+            f = form['image']
             logger.info('Received file successfully')
             img_file = tempfile.mkstemp(suffix='.jpg')
             with open(img_file[1], 'wb') as f_img:
@@ -96,6 +97,7 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 license_plates = refresh_license_plates()
                 if license_plate in license_plates:
                     logger.info("{}'s car is approaching - opening the gate!".format(license_plates[license_plate]))
+                    slack.chat.post_message('@augubot1', '%auguvalet open')
             return True, "File(s) '%s' upload success!" % saved_fns
         except (IOError, KeyError) as e:
             logger.error(e.message)

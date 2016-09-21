@@ -14,14 +14,29 @@ from openalpr import Alpr
 from slacker import Slacker, Error
 
 
-slack = Slacker(os.environ['SLACK_TOKEN'])
+alpr = Alpr("eu", "/srv/openalpr/config/openalpr.conf.defaults", "/srv/openalpr/runtime_data")
+alpr.set_top_n(1)
+alpr.set_default_region("md")
 
-users_list = slack.users.list().body['members']
+logger = logging.getLogger('openalpr')
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+
+handler = logging.StreamHandler(stream=sys.stdout)
+handler.setFormatter(formatter)
+handler.setLevel(logging.INFO)
+
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+logger.propagate = 0
 
 
 def refresh_license_plates(licenseplate_file='/data/licenseplates.json'):
     if not os.path.isfile(licenseplate_file) or \
             time.time() - os.path.getmtime(licenseplate_file) > (24 * 60 * 60):
+
+        slack = Slacker(os.environ['SLACK_TOKEN'])
+
+        users_list = slack.users.list().body['members']
 
         license_plates = {}
         for user in users_list:
@@ -47,22 +62,6 @@ def refresh_license_plates(licenseplate_file='/data/licenseplates.json'):
             license_plates = json.load(f_lp)
 
     return license_plates
-
-
-alpr = Alpr("eu", "/srv/openalpr/config/openalpr.conf.defaults", "/srv/openalpr/runtime_data")
-alpr.set_top_n(1)
-alpr.set_default_region("md")
-
-logger = logging.getLogger('openalpr')
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-
-handler = logging.StreamHandler(stream=sys.stdout)
-handler.setFormatter(formatter)
-handler.setLevel(logging.INFO)
-
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
-logger.propagate = 0
 
 
 class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):

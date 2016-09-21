@@ -55,12 +55,10 @@ def refresh_license_plates(licenseplate_file='/data/licenseplates.json'):
                 if profile is None or 'profile' not in profile.body:
                     continue
                 profile = profile.body['profile']
-                if 'email' not in profile or profile['email'] is None:
-                    continue
-                email = profile['email']
-                if 'fields' in profile and profile['fields'] is not None and 'Xf2E30E95Y' in profile['fields']:
+                if 'fields' in profile and profile['fields'] is not None and \
+                                'Xf2E30E95Y' in profile['fields']:
                     license_plate = profile['fields']['Xf2E30E95Y']['value'].replace('-', '')
-                    license_plates[license_plate] = email
+                    license_plates[license_plate] = user['name']
             except (TypeError, Error):
                 continue
         with open(licenseplate_file, 'wt') as f_lp:
@@ -100,6 +98,8 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 if license_plate in license_plates:
                     logger.info("{}'s car is approaching - opening the gate!".format(license_plates[license_plate]))
                     slack.chat.post_message('@augubot1', '%auguvalet open')
+                    slack.chat.post_message('#auguvalet', '@{} is parking his car.'
+                                            .format(license_plates[license_plate]))
             refresh_license_plates()
             return True, "File(s) '%s' upload success!" % saved_fns
         except (IOError, KeyError) as e:

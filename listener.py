@@ -82,7 +82,8 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         saved_fns = ""
 
         try:
-            f = form['image']
+            logger.info('Received fields: {}'.format(','.join([f for f in form])))
+            f = form['file']
             logger.info('Received file successfully')
             img_file = tempfile.mkstemp(suffix='.jpg')
             with open(img_file[1], 'wb') as f_img:

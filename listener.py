@@ -14,7 +14,7 @@ from openalpr import Alpr
 from slacker import Slacker, Error
 
 
-alpr = Alpr("eu", "/srv/openalpr/config/openalpr.conf.defaults", "/srv/openalpr/runtime_data")
+alpr = Alpr("eu", "/srv/openalpr.conf.defaults", "/srv/openalpr/runtime_data")
 alpr.set_top_n(1)
 alpr.set_default_region("md")
 
@@ -101,9 +101,9 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 if license_plate in license_plates:
                     logger.info("{}'s car is approaching - opening the gate!".format(license_plates[license_plate]))
                     slack.chat.post_message('@augubot1', '%auguvalet open')
-                    slack.chat.post_message('#auguvalet', '@{} is parking his car.'
-                                            .format(license_plates[license_plate]),
-                                            attachments={'image_url': 'https://augury.slack.com/files/sweiss/F2ECY215F/open-augury.gif'})
+                    slack.files.upload(file_='/srv/openalpr/open-Augury.gif', filename='open-Augury.gif',
+                                       title='@{} is parking his car.'.format(license_plates[license_plate]),
+                                       channels='#auguvalet')
             refresh_license_plates()
             return True, "File(s) '%s' upload success!" % saved_fns
         except (IOError, KeyError) as e:

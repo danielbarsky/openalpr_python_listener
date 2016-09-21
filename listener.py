@@ -32,10 +32,17 @@ logger.propagate = 0
 slack = Slacker(os.environ['SLACK_TOKEN'])
 
 
+def load_license_plates(licenseplate_file='/data/licenseplates.json'):
+    if not os.path.isfile(licenseplate_file):
+        refresh_license_plates(licenseplate_file=licenseplate_file)
+    with open(licenseplate_file, 'rt') as f_lp:
+        license_plates = json.load(f_lp)
+    return license_plates
+
+
 def refresh_license_plates(licenseplate_file='/data/licenseplates.json'):
     if not os.path.isfile(licenseplate_file) or \
-            time.time() - os.path.getmtime(licenseplate_file) > (24 * 60 * 60):
-
+                            time.time() - os.path.getmtime(licenseplate_file) > (24 * 60 * 60):
         users_list = slack.users.list().body['members']
 
         license_plates = {}
@@ -58,11 +65,6 @@ def refresh_license_plates(licenseplate_file='/data/licenseplates.json'):
                 continue
         with open(licenseplate_file, 'wt') as f_lp:
             json.dump(license_plates, f_lp)
-    else:
-        with open(licenseplate_file, 'rt') as f_lp:
-            license_plates = json.load(f_lp)
-
-    return license_plates
 
 
 class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
@@ -94,15 +96,17 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             if len(res['results']) > 0:
                 self.wfile.write(res['results'][0])
                 license_plate = res['results'][0]['plate'].replace('-', '')
-                license_plates = refresh_license_plates()
+                license_plates = load_license_plates()
                 if license_plate in license_plates:
                     logger.info("{}'s car is approaching - opening the gate!".format(license_plates[license_plate]))
                     slack.chat.post_message('@augubot1', '%auguvalet open')
+            refresh_license_plates()
             return True, "File(s) '%s' upload success!" % saved_fns
         except (IOError, KeyError) as e:
             logger.error(e.message)
             self.send_response(200)
             self.end_headers()
+            refresh_license_plates()
             return False, "Can't create file to write, do you have permission to write?"
 
 

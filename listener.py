@@ -40,6 +40,8 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
         saved_fns = ""
 
+        logger.info(form)
+
         try:
             f = form['file']
             logger.info('Received file successfully')

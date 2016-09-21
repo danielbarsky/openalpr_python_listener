@@ -1,12 +1,53 @@
 import SimpleHTTPServer
 import SocketServer
+import json
 import logging
 import cgi
+import os
 
 import sys
 import tempfile
 
+import time
 from openalpr import Alpr
+
+from slacker import Slacker, Error
+
+
+slack = Slacker(os.environ['SLACK_TOKEN'])
+
+users_list = slack.users.list().body['members']
+
+
+def refresh_license_plates(licenseplate_file='/data/licenseplates.json'):
+    if not os.path.isfile(licenseplate_file) or \
+            time.time() - os.path.getmtime(licenseplate_file) > (24 * 60 * 60):
+
+        license_plates = {}
+        for user in users_list:
+            try:
+                if ('is_bot' in user and user['is_bot']) or ('deleted' in user and user['deleted'] or 'email' not in user):
+                    continue
+                profile = slack.users.profile.get(user['id'])
+                if profile is None or 'profile' not in profile.body:
+                    continue
+                profile = profile.body['profile']
+                if 'email' not in profile or profile['email'] is None:
+                    continue
+                email = profile['email']
+                if 'fields' in profile and profile['fields'] is not None and 'Xf2E30E95Y' in profile['fields']:
+                    license_plate = profile['fields']['Xf2E30E95Y']['value'].replace('-', '')
+                    license_plates[license_plate] = email
+            except (TypeError, Error):
+                continue
+        with open('/data/licenseplates.json', 'wt') as f_lp:
+            json.dump(license_plates, f_lp)
+    else:
+        with open('/data/licenseplates.json', 'rt') as f_lp:
+            license_plates = json.load(f_lp)
+
+    return license_plates
+
 
 alpr = Alpr("eu", "/srv/openalpr/config/openalpr.conf.defaults", "/srv/openalpr/runtime_data")
 alpr.set_top_n(1)
@@ -54,6 +95,10 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             self.end_headers()
             if len(res['results']) > 0:
                 self.wfile.write(res['results'][0])
+                license_plate = res['results'][0]['plate'].replace('-', '')
+                license_plates = refresh_license_plates()
+                if license_plate in license_plates:
+                    logger.info("{}'s car is approaching - opening the gate!".format(license_plates[license_plate]))
             return True, "File(s) '%s' upload success!" % saved_fns
         except (IOError, KeyError) as e:
             logger.error(e.message)

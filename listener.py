@@ -79,6 +79,9 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             headers=self.headers,
             environ={'REQUEST_METHOD': 'POST'})
 
+        self.send_response(200)
+        self.end_headers()
+
         saved_fns = ""
 
         try:
@@ -90,8 +93,7 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 f_img.write(f.file.read())
             res = alpr.recognize_file(img_file[1])
             logger.info('License plate recognition result: {}'.format(res['results']))
-            self.send_response(200)
-            self.end_headers()
+
             if len(res['results']) > 0:
                 self.wfile.write(res['results'][0])
                 license_plate = res['results'][0]['plate'].replace('-', '')
@@ -105,8 +107,6 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             return True, "File(s) '%s' upload success!" % saved_fns
         except (IOError, KeyError) as e:
             logger.error(e.message)
-            self.send_response(200)
-            self.end_headers()
             refresh_license_plates()
             return False, "Can't create file to write, do you have permission to write?"
 

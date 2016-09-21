@@ -102,7 +102,8 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                     logger.info("{}'s car is approaching - opening the gate!".format(license_plates[license_plate]))
                     slack.chat.post_message('@augubot1', '%auguvalet open')
                     slack.chat.post_message('#auguvalet', '@{} is parking his car.'
-                                            .format(license_plates[license_plate]))
+                                            .format(license_plates[license_plate]),
+                                            attachments={'image_url': 'https://augury.slack.com/files/sweiss/F2ECY215F/open-augury.gif'})
             refresh_license_plates()
             return True, "File(s) '%s' upload success!" % saved_fns
         except (IOError, KeyError) as e:

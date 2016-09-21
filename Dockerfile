@@ -34,6 +34,8 @@ run cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_INSTALL_SYSCONFDIR:PATH=/etc 
     make -j2 && \
     make install
 
+run pip install slacker
+
 run pip install /srv/openalpr/src/bindings/python
 
 workdir /data

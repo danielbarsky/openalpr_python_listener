@@ -47,7 +47,7 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             with open(img_file[1], 'wb') as f_img:
                 f_img.write(f.file.read())
             res = alpr.recognize_file(img_file[1])
-            logger.info('License plate recognition result: {}', res['results'])
+            logger.info('License plate recognition result: {}'.format(res['results']))
             self.send_response(200)
             self.end_headers()
             if len(res['results']) > 0:

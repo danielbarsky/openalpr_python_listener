@@ -42,16 +42,19 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
         try:
             f = form['file']
+            logger.info('Received file successfully')
             img_file = tempfile.mkstemp(suffix='.jpg')
             with open(img_file[1], 'wb') as f_img:
                 f_img.write(f.file.read())
             res = alpr.recognize_file(img_file[1])
+            logger.info('License plate recognition result: {}', res['results'])
             self.send_response(200)
             self.end_headers()
             if len(res['results']) > 0:
                 self.wfile.write(res['results'][0])
             return True, "File(s) '%s' upload success!" % saved_fns
-        except (IOError, KeyError):
+        except (IOError, KeyError) as e:
+            logger.error(e.message)
             self.send_response(200)
             self.end_headers()
             return False, "Can't create file to write, do you have permission to write?"
@@ -64,5 +67,5 @@ if __name__ == '__main__':
 
     httpd = SocketServer.TCPServer(("", int(port)), Handler)
 
-    print "serving at port", port
+    logger.info("serving at port {}".format(port))
     httpd.serve_forever()
